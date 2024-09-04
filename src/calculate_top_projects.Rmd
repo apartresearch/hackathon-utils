@@ -1,0 +1,91 @@
+```{r}
+pacman::p_load(tidyverse,ggplot2,lubridate,lme4,broom)
+```
+
+```{r}
+df <- read_csv("Apart Research - Project reviews.csv") %>% 
+  mutate(`Created On` = as.POSIXct(`Created On`, format="%a %b %d %Y %H:%M:%S", tz="GMT"))
+
+
+df %>% 
+  # This line filters all projects with the new Criteria rating system, i.e. next time we probably want to filter by the hackathon ID.
+  filter(!is.na(`Criteria 1`)) %>% 
+  select(`Project name`, `Criteria 1`, `Criteria 2`, `Criteria 3`) %>% 
+  group_by(`Project name`) %>% 
+  summarise(
+    c1=mean(`Criteria 1`),
+    c2=mean(`Criteria 2`),
+    c3=mean(`Criteria 3`),
+    total=mean(c1,c2,c3)
+  )
+
+df <- df %>% 
+  filter(!is.na(`Criteria 1`)) %>% 
+  mutate(total = (`Criteria 1` + `Criteria 2` + `Criteria 3`) / 3) %>% 
+  group_by(`Project name`) %>%
+  mutate(`Project name` = paste0("[", n(),"] ", substr(`Project name`, start=1, stop=20),"...")) %>%
+  mutate(max_total = mean(total)) %>%
+  ungroup() %>%
+  mutate(`Project name` = factor(`Project name`, 
+                                 levels = unique(`Project name`[order(-max_total)])))
+
+df %>% 
+  ggplot() +
+  aes(x = total, fill = `Project name`) +
+  geom_boxplot() +
+  facet_wrap(~`Project name`) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title="Projects ranked by reviewer scores", subtitle="Not conditioned on reviewer bias")
+
+
+```
+
+```{r}
+df <- df %>% 
+  mutate(first = str_extract(Name, "[a-zA-Z]+"))
+
+# Assuming your data is in long format. If not, first reshape it:
+df_long <- df %>%
+  pivot_longer(cols = starts_with("Criteria"), 
+               names_to = "Criterion", 
+               values_to = "Rating")
+
+# Fit a linear mixed-effects model
+model <- lmer(Rating ~ (1|first) + (1|Criterion) + (1|`Project name`), data = df_long)
+
+# Extract the reviewer effects
+reviewer_effects <- ranef(model)$first %>%
+  as.data.frame() %>%
+  rownames_to_column("first") %>%
+  rename(reviewer_effect = `(Intercept)`)
+
+# Calculate normalized ratings
+df_normalized <- df_long %>%
+  left_join(reviewer_effects, by = "first") %>%
+  mutate(Normalized_Rating = Rating - reviewer_effect)
+
+# Reshape back to wide format if needed
+df_normalized_wide <- df_normalized %>%
+  select(-Rating, -reviewer_effect) %>%
+  pivot_wider(names_from = Criterion, 
+              values_from = Normalized_Rating, 
+              names_prefix = "Normalized_") %>% 
+  mutate(Normalized_mean = (`Normalized_Criteria 1` + `Normalized_Criteria 2` + `Normalized_Criteria 3`)/3) %>% 
+  group_by(`Project name`) %>% 
+  mutate(normal_mean_overall = mean(Normalized_mean)) %>%
+  ungroup() %>%
+  mutate(`Project name` = factor(`Project name`, 
+                                 levels = unique(`Project name`[order(-normal_mean_overall)])))
+
+df_normalized_wide %>% 
+  ggplot() +
+  aes(x = Normalized_mean, fill = `Project name`) +
+  geom_boxplot() +
+  facet_wrap(~`Project name`) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title="Projects ranked by reviewer scores", subtitle="Conditioned on reviewer bias with a linear mixed effects model")
+  
+```
+
