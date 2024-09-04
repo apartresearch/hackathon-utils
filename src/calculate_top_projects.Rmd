@@ -3,7 +3,7 @@ pacman::p_load(tidyverse,ggplot2,lubridate,lme4,broom)
 ```
 
 ```{r}
-df <- read_csv("Apart Research - Project reviews.csv") %>% 
+df <- read_csv("../data/project_reviews_2024-09-04.csv") %>% 
   mutate(`Created On` = as.POSIXct(`Created On`, format="%a %b %d %Y %H:%M:%S", tz="GMT"))
 
 
@@ -86,6 +86,13 @@ df_normalized_wide %>%
   theme_minimal() +
   theme(legend.position = "none") +
   labs(title="Projects ranked by reviewer scores", subtitle="Conditioned on reviewer bias with a linear mixed effects model")
-  
+
+df_normalized_wide %>% 
+  write_csv("../data/demo_calculated_scores.csv")
+
+```
+
+```{r}
+df_normalized_wide
 ```
 
