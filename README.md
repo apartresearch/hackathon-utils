@@ -41,13 +41,13 @@ cd hackathon-utils
 
 You can install the package in editable mode using pip:
 
-```
+```bash
 pip install -e .
 ```
 
 Alternatively, you can install it directly from the repository:
 
-```
+```bash
 pip install git+https://github.com/yourusername/hackathon-utils.git
 ```
 
@@ -63,7 +63,7 @@ The package relies on the following Python libraries:
 
 Install the dependencies using:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 Import the required functions from the package:
 
-```
+```python
 from hackathon_utils import (
     load_data,
     preprocess_data,
@@ -90,7 +90,7 @@ from hackathon_utils import (
 
 Here's a step-by-step example of how to use the package:
 
-```
+```python
 # Step 1: Load Data
 df = load_data('data/project_reviews_2024-09-04.csv')
 
@@ -139,7 +139,7 @@ Contributions are welcome! Please follow these steps:
 4. Make Your Changes: Add your new features or bug fixes.
 5. Commit and Push:
 
-```
+```bash
 git add .
 git commit -m "Add your commit message here"
 git push origin feature/your-feature-name
